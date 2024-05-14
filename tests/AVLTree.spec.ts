@@ -31,39 +31,38 @@ describe('AVLTree', () => {
             success: true,
         });
 
-        generateUniqueRandomArray = async(size: number, min: number = 1, max: number = 20000) => {
+        generateUniqueRandomArray = async (size: number, min: number = 1, max: number = 20000) => {
             // Create an array with numbers in sequence
             const numbers = Array.from({ length: max - min + 1 }, (_, i) => i + min);
-          
+
             // Shuffle the array using the Fisher-Yates shuffle algorithm
             for (let i = size - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+                const j = Math.floor(Math.random() * (i + 1));
+                [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
             }
-          
+
             // Return the first 'size' elements (guaranteed unique)
             return numbers.slice(0, size);
-        }
+        };
     });
 
-    it('should deploy', async () => {
-    });
+    it('should deploy', async () => {});
 
     it('should create multi nodes', async () => {
         const sendCreate = async (key: bigint) => {
             const createNodeResult = await tree.sendCreateNode(deployer.getSender(), toNano('0.2'), key, key * 2n);
-            // const value = await tree.getValueByKey(key);
-            // expect(value).toBe(key * 2n);
-        }
+            const value = await tree.getValueByKey(key);
+            expect(value).toBe(key * 2n);
+        };
 
         const keys = await generateUniqueRandomArray(20000);
         let promises = [];
         const startTime = new Date();
-        for(let i = 0; i < keys.length; i++) {
+        for (let i = 0; i < keys.length; i++) {
             let key = keys[i];
             promises.push(sendCreate(BigInt(key)));
 
-            if((i + 1) % 1000 === 0) {
+            if ((i + 1) % 1000 === 0) {
                 await Promise.all(promises);
                 promises = [];
                 console.log(`Processed ${i + 1} nodes`);
@@ -131,7 +130,7 @@ describe('AVLTree', () => {
 
     it('should update all nodes', async () => {
         const startTime = new Date();
-        for(let key = 1n; key <= 20000n; key++) {
+        for (let key = 1n; key <= 20000n; key++) {
             const newValue = key * 4n;
 
             const updateNodeResult = await tree.sendUpdateNode(deployer.getSender(), toNano('0.05'), key, newValue);
