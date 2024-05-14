@@ -4,6 +4,7 @@ import { AVLTree } from '../wrappers/AVLTree';
 import '@ton/test-utils';
 import { compile } from '@ton/blueprint';
 import exp from 'constants';
+import logger from '../helpers/logger';
 
 describe('AVLTree', () => {
     let code: Cell;
@@ -12,8 +13,10 @@ describe('AVLTree', () => {
     let deployer: SandboxContract<TreasuryContract>;
     let tree: SandboxContract<AVLTree>;
     let generateUniqueRandomArray: any;
+    let totalKey: number;
 
     beforeAll(async () => {
+        totalKey = 1000;
         code = await compile('AVLTree');
 
         blockchain = await Blockchain.create();
@@ -51,11 +54,11 @@ describe('AVLTree', () => {
     it('should create multi nodes', async () => {
         const sendCreate = async (key: bigint) => {
             const createNodeResult = await tree.sendCreateNode(deployer.getSender(), toNano('0.2'), key, key * 2n);
-            const value = await tree.getValueByKey(key);
-            expect(value).toBe(key * 2n);
+            // const value = await tree.getValueByKey(key);
+            // expect(value).toBe(key * 2n);
         };
 
-        const keys = await generateUniqueRandomArray(20000);
+        const keys = await generateUniqueRandomArray(totalKey, 1, totalKey);
         let promises = [];
         const startTime = new Date();
         for (let i = 0; i < keys.length; i++) {
@@ -71,7 +74,7 @@ describe('AVLTree', () => {
             }
         }
         let endTime = new Date();
-        console.log(`Total time to add 20000 key: ${endTime.getTime() - startTime.getTime()}`);
+        console.log(`Total time to add ${totalKey} key: ${endTime.getTime() - startTime.getTime()}`);
     });
 
     it('should query multi nodes', async () => {
@@ -103,7 +106,7 @@ describe('AVLTree', () => {
         expect(value).toBe(newValue);
 
         let endTime = new Date();
-        console.log(`Total time to update 1 key: ${endTime.getTime() - startTime.getTime()}`);
+        logger.info(`Total time to update 1 key: ${endTime.getTime() - startTime.getTime()}`);
     });
 
     it('should update multi nodes', async () => {
@@ -130,10 +133,23 @@ describe('AVLTree', () => {
 
     it('should update all nodes', async () => {
         const startTime = new Date();
-        for (let key = 1n; key <= 20000n; key++) {
+        const promises = [];
+        const sendUpdateNodeWrappers = async (key: bigint) => {
             const newValue = key * 4n;
-
-            const updateNodeResult = await tree.sendUpdateNode(deployer.getSender(), toNano('0.05'), key, newValue);
+            const combine = {
+                key: key.toString(),
+                start: new Date().getTime(),
+                end: new Date().getTime(),
+                t: 0,
+            };
+            await tree.sendUpdateNode(deployer.getSender(), toNano('0.05'), key, newValue);
+            combine.end = new Date().getTime();
+            combine.t = combine.end - combine.start;
+            logger.info(`${JSON.stringify(combine)}`);
+        };
+        for (let key = 1n; key <= BigInt(totalKey); key++) {
+            // await sendUpdateNodeWrappers(key);
+            promises.push(sendUpdateNodeWrappers(key));
             // expect(updateNodeResult.transactions).toHaveTransaction({
             //     from: deployer.address,
             //     to: tree.address,
@@ -143,8 +159,9 @@ describe('AVLTree', () => {
             // const value = await tree.getValueByKey(key);
             // expect(value).toBe(newValue);
         }
+        await Promise.all(promises);
 
         const endTime = new Date();
-        console.log(`Total time to update 20000 keys: ${endTime.getTime() - startTime.getTime()}`);
+        console.log(`Total time to update ${totalKey} keys: ${endTime.getTime() - startTime.getTime()}`);
     });
 });

@@ -124,7 +124,7 @@ cell left_rotate(cell node) impure {
     (cell left_child, cell right_child, int node_key, int node_value, int node_height) = unpack_node_data(node);
 
     if (key < node_key) {
-       left_child = update_value(left_child, key, value);
+        left_child = update_value(left_child, key, value);
     } elseif (key > node_key) {
         right_child = update_value(right_child, key, value);
     } else {
