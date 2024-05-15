@@ -43,6 +43,14 @@ export class AVLTree implements Contract {
         });
     }
 
+    async sendCollectTon(provider: ContractProvider, via: Sender, value: bigint, amount: bigint) {
+        await provider.internal(via, {
+            value,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
+            body: beginCell().storeUint(3, 32).storeUint(0, 64).storeCoins(amount).endCell(),
+        });
+    }
+
     async getValueByKey(provider: ContractProvider, key: bigint): Promise<bigint> {
         const res = await provider.get('get_value_by_key', [
             { type: 'int', value: key },
@@ -53,5 +61,10 @@ export class AVLTree implements Contract {
     async getHeight(provider: ContractProvider): Promise<bigint> {
         const res = await provider.get('get_tree_height', []);
         return res.stack.readBigNumber();
+    }
+
+    async getRoot(provider: ContractProvider): Promise<Cell> {
+        const res = await provider.get('get_root', []);
+        return res.stack.readCell();
     }
 }

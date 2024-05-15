@@ -10,5 +10,8 @@ export async function run(provider: NetworkProvider) {
     const AVLTreeAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
     const tree = provider.open(AVLTree.createFromAddress(AVLTreeAddress));
 
-    await tree.sendCreateNode(sender, toNano('0.05'), BigInt(4), BigInt(8));
+    const ui = provider.ui();
+    let tonAmount = await ui.input('Enter the amount of TON to collect');
+
+    await tree.sendCollectTon(sender, toNano('0.05'), BigInt(tonAmount));
 }

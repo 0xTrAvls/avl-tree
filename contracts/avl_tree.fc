@@ -156,24 +156,41 @@ cell left_rotate(cell node) impure {
     if(slice_empty?(in_msg_body)) {
         return();
     }
+
     cell root = load_data();  
     int op = in_msg_body~load_uint(32);
     int query_id = in_msg_body~load_uint(64);
     
-    if(op == 1) {
+    if (op == 1) {
         int key = in_msg_body~load_uint(32);
         int value = in_msg_body~load_uint(64);
         root = insert_node(root, key, value);
         save_data(root);
-        return();
+        return ();
     }
 
-    if(op == 2) {
+    if (op == 2) {
         int key = in_msg_body~load_uint(32);
         int value = in_msg_body~load_uint(64);
         root = update_value(root, key, value);
         save_data(root);
-        return();
+        return ();
+    }
+
+    if (op == 3) {
+        slice cs = in_msg_full.begin_parse();
+        int flags = cs~load_uint(4);
+        slice sender_address = cs~load_msg_addr();
+        int ton_amount = in_msg_body~load_coins();
+
+        var msg = begin_cell()
+            .store_uint(0x10, 6)
+            .store_slice(sender_address)
+            .store_coins(ton_amount)
+            .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+            .end_cell();
+        send_raw_message(msg, 64);
+        return ();
     }
 
     throw(0xffffffff);
@@ -187,4 +204,8 @@ cell left_rotate(cell node) impure {
 (int) get_tree_height() method_id {
     cell root = load_data();
     return get_height(root);
+}
+
+(cell) get_root() method_id {
+    return load_data();
 }
