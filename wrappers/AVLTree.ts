@@ -121,6 +121,27 @@ export class AVLTree implements Contract {
         await this.getAllKeyRecursive(root, array);
         return array;
     }
+
+    async getAllLeavesRecursive(node: Cell | null, array: any[]): Promise<void> {
+        if (node == null) {
+            return;
+        }
+        let nodeData = await this.unPackNodeData(node);
+        if (nodeData.leftChild == null && nodeData.rightChild == null) {
+            array.push(nodeData.key);
+        }
+        await this.getAllLeavesRecursive(nodeData.leftChild, array);
+        await this.getAllLeavesRecursive(nodeData.rightChild, array);
+        return;
+    }
+
+    async getAllLeaves(provider: ContractProvider) {
+        let root = await this.getRoot(provider);
+        const array: any[] = [];
+        await this.getAllLeavesRecursive(root, array);
+        return array;
+    }
+
     async getTreeData(provider: ContractProvider) {
         let root = await this.getRoot(provider);
         return this.countNode(root);
