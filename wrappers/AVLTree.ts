@@ -1,4 +1,4 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from '@ton/core';
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode, Slice } from '@ton/core';
 
 export type AVLTreeConfig = {};
 
@@ -66,5 +66,31 @@ export class AVLTree implements Contract {
     async getRoot(provider: ContractProvider): Promise<Cell> {
         const res = await provider.get('get_root', []);
         return res.stack.readCell();
+    }
+
+    async unPackNodeData(node: Cell) {
+        let ds: Slice = node.beginParse();
+        let leftChild = ds.loadMaybeRef();
+        let rightChild = ds.loadMaybeRef();
+        let key = ds.loadUint(32);
+        let nodeValue = ds.loadUint(64);
+        let height = ds.loadUint(32);
+        return {leftChild, rightChild, key, nodeValue, height};
+    }
+
+    async countNode(node: Cell | null): Promise<bigint> {
+        if(node == null) {
+            return BigInt(0);
+        }
+        let numNode = BigInt(1);
+        let nodeData = await this.unPackNodeData(node);
+        numNode += await this.countNode(nodeData.leftChild);
+        numNode += await this.countNode(nodeData.rightChild);
+        return numNode;
+    }
+
+    async getTreeData(provider: ContractProvider) {
+        let root = await this.getRoot(provider);
+        return this.countNode(root);
     }
 }
