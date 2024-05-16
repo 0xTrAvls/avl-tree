@@ -160,7 +160,7 @@ cell left_rotate(cell node) impure {
     cell root = load_data();  
     int op = in_msg_body~load_uint(32);
     int query_id = in_msg_body~load_uint(64);
-    
+     
     if (op == 1) {
         int key = in_msg_body~load_uint(32);
         int value = in_msg_body~load_uint(64);
@@ -168,7 +168,7 @@ cell left_rotate(cell node) impure {
         save_data(root);
         return ();
     }
-
+ 
     if (op == 2) {
         int key = in_msg_body~load_uint(32);
         int value = in_msg_body~load_uint(64);

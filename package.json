@@ -4,7 +4,8 @@
     "scripts": {
         "start": "blueprint run",
         "build": "blueprint build",
-        "test": "jest --verbose"
+        "test": "jest --verbose",
+        "add:node": "ts-node cmd/scriptsSubmitNodes.ts"
     },
     "devDependencies": {
         "@ton/blueprint": "^0.19.0",
