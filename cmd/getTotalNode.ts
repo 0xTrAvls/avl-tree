@@ -42,7 +42,7 @@ export async function execute() {
     const AVLTreeAddress = Address.parse('EQC57ZB5XLwPQbOqHlrxLv6MI1hXKwfAZ1Iv4W-NQ-3ReObr');
     const tree = tonClient.open(AVLTree.createFromAddress(AVLTreeAddress));
 
-    console.log(await tree.getTreeData());
+    console.log(await tree.getAllKey());
 }
 
 execute().then();
