@@ -4,14 +4,14 @@ import { compile } from '@ton/blueprint';
 import logger from '../helpers/logger';
 import '@ton/test-utils';
 
-import { AVLTree } from '../wrappers/AVLTree';
+import { AvlTree } from '../wrappers/AVLTree';
 
 describe('AVLTree', () => {
   let code: Cell;
 
   let blockchain: Blockchain;
   let deployer: SandboxContract<TreasuryContract>;
-  let tree: SandboxContract<AVLTree>;
+  let tree: SandboxContract<AvlTree>;
   let generateUniqueRandomArray: any;
   let totalKey: number;
 
@@ -23,7 +23,7 @@ describe('AVLTree', () => {
 
     deployer = await blockchain.treasury('deployer');
 
-    tree = blockchain.openContract(AVLTree.createFromConfig({adminAddress: deployer.address}, code));
+    tree = blockchain.openContract(AvlTree.createFromConfig({ adminAddress: deployer.address }, code));
 
     const deployResult = await tree.sendDeploy(deployer.getSender(), toNano('0.05'));
     expect(deployResult.transactions).toHaveTransaction({

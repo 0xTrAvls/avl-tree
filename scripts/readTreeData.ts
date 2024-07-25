@@ -1,13 +1,13 @@
-import { AVLTree } from '../wrappers/AVLTree';
+import { AvlTree } from '../wrappers/AVLTree';
 import { NetworkProvider } from '@ton/blueprint';
 import { Address, toNano } from '@ton/core';
 import dotenv from 'dotenv';
 dotenv.config();
 
 export async function run(provider: NetworkProvider) {
-    const AVLTreeAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
-    const tree = provider.open(AVLTree.createFromAddress(AVLTreeAddress));
+  const avlTreeAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const tree = provider.open(AvlTree.createFromAddress(avlTreeAddress));
 
-    const treeData = await tree.getTreeData();
-    console.log(treeData);
+  const numNode = await tree.getNumNode();
+  console.log(numNode);
 }

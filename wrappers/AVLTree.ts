@@ -10,28 +10,28 @@ import {
   Slice,
 } from '@ton/core';
 
-export type AVLTreeConfig = {
+export type AvlTreeConfig = {
   adminAddress: Address;
 };
 
-export function avlTreeConfigToCell(config: AVLTreeConfig): Cell {
+export function avlTreeConfigToCell(config: AvlTreeConfig): Cell {
   return beginCell().storeAddress(config.adminAddress).storeMaybeRef(null).endCell();
 }
 
-export class AVLTree implements Contract {
+export class AvlTree implements Contract {
   constructor(
     readonly address: Address,
     readonly init?: { code: Cell; data: Cell },
   ) {}
 
   static createFromAddress(address: Address) {
-    return new AVLTree(address);
+    return new AvlTree(address);
   }
 
-  static createFromConfig(config: AVLTreeConfig, code: Cell, workchain = 0) {
+  static createFromConfig(config: AvlTreeConfig, code: Cell, workchain = 0) {
     const data = avlTreeConfigToCell(config);
     const init = { code, data };
-    return new AVLTree(contractAddress(workchain, init), init);
+    return new AvlTree(contractAddress(workchain, init), init);
   }
 
   async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
@@ -117,9 +117,9 @@ export class AVLTree implements Contract {
 
   async countNode(node: Cell | null): Promise<bigint> {
     if (node == null) {
-      return BigInt(0);
+      return 0n;
     }
-    let numNode = BigInt(1);
+    let numNode = 1n;
     let nodeData = await this.unPackNodeData(node);
     numNode += await this.countNode(nodeData.leftChild);
     numNode += await this.countNode(nodeData.rightChild);
@@ -143,7 +143,7 @@ export class AVLTree implements Contract {
     return array;
   }
 
-  async getAllLeavesRecursive(node: Cell | null, array: any[]): Promise<void> {
+  async getAllLeavesKeyRecursive(node: Cell | null, array: any[]): Promise<void> {
     if (node == null) {
       return;
     }
@@ -151,19 +151,19 @@ export class AVLTree implements Contract {
     if (nodeData.leftChild == null && nodeData.rightChild == null) {
       array.push(nodeData.key);
     }
-    await this.getAllLeavesRecursive(nodeData.leftChild, array);
-    await this.getAllLeavesRecursive(nodeData.rightChild, array);
+    await this.getAllLeavesKeyRecursive(nodeData.leftChild, array);
+    await this.getAllLeavesKeyRecursive(nodeData.rightChild, array);
     return;
   }
 
-  async getAllLeaves(provider: ContractProvider) {
+  async getAllLeavesKey(provider: ContractProvider) {
     let root = await this.getRoot(provider);
     const array: any[] = [];
-    await this.getAllLeavesRecursive(root, array);
+    await this.getAllLeavesKeyRecursive(root, array);
     return array;
   }
 
-  async getTreeData(provider: ContractProvider) {
+  async getNumNode(provider: ContractProvider) {
     let root = await this.getRoot(provider);
     return this.countNode(root);
   }
