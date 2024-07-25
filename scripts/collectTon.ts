@@ -6,12 +6,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export async function run(provider: NetworkProvider) {
-    const sender = await createSender();
-    const AVLTreeAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
-    const tree = provider.open(AVLTree.createFromAddress(AVLTreeAddress));
+  const sender = await createSender();
+  const AVLTreeAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const tree = provider.open(AVLTree.createFromAddress(AVLTreeAddress));
 
-    const ui = provider.ui();
-    let tonAmount = await ui.input('Enter the amount of TON to collect');
+  const ui = provider.ui();
+  let tonAmount = await ui.input('Enter the amount of TON to collect');
 
-    await tree.sendCollectTon(sender, toNano('0.05'), BigInt(tonAmount));
+  await tree.sendResetGas(sender, toNano('0.05'), BigInt(tonAmount));
 }
