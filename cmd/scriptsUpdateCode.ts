@@ -68,7 +68,7 @@ export async function execute() {
   for (let i = 0; i < wallets.length; i++) {
     senders.push(wallets[i].sender(tonClient.provider(wallets[i].address), keyPairs[i].secretKey));
   }
-  const storageAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const storageAddress = Address.parse(process.env.STORAGE_ADDRESS!);
   const storage = tonClient.open(Storage.createFromAddress(storageAddress));
 
   const currentKeys = await storage.getAllLeavesKey();

@@ -72,7 +72,7 @@ export async function execute() {
     senders.push(wallets[i].sender(tonClient.provider(wallets[i].address), keyPairs[i].secretKey));
   }
   console.log(senders);
-  const storageAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const storageAddress = Address.parse(process.env.STORAGE_ADDRESS!);
   const storage = tonClient.open(Storage.createFromAddress(storageAddress));
   const numberOfNodes = 20000;
   const keys = await generateUniqueRandomArray(numberOfNodes, 200000, 300000);

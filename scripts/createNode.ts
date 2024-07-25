@@ -8,7 +8,7 @@ import { Storage } from '../wrappers/Storage';
 
 export async function run(provider: NetworkProvider) {
   const sender = await createSender();
-  const storageAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const storageAddress = Address.parse(process.env.STORAGE_ADDRESS!);
   const storage = provider.open(Storage.createFromAddress(storageAddress));
 
   const key = 1000000n;

@@ -12,7 +12,7 @@ export async function execute() {
     apiKey: process.env.API_KEY,
   });
 
-  const storageAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const storageAddress = Address.parse(process.env.STORAGE_ADDRESS!);
   const storage = tonClient.open(Storage.createFromAddress(storageAddress));
 
   console.log(await storage.getAllKey());

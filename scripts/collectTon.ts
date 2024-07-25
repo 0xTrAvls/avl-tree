@@ -9,7 +9,7 @@ dotenv.config();
 
 export async function run(provider: NetworkProvider) {
   const sender = await createSender();
-  const storageAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const storageAddress = Address.parse(process.env.STORAGE_ADDRESS!);
   const storage = provider.open(Storage.createFromAddress(storageAddress));
 
   await storage.sendResetGas(sender, toNano('0.05'), 0n);

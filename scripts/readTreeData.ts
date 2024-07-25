@@ -7,7 +7,7 @@ import { Storage } from '../wrappers/Storage';
 dotenv.config();
 
 export async function run(provider: NetworkProvider) {
-  const storageAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const storageAddress = Address.parse(process.env.STORAGE_ADDRESS!);
   const storage = provider.open(Storage.createFromAddress(storageAddress));
 
   const numNode = await storage.getNumNode();
