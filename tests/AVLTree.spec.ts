@@ -21,9 +21,9 @@ describe('AVLTree', () => {
 
     blockchain = await Blockchain.create();
 
-    tree = blockchain.openContract(AVLTree.createFromConfig({}, code));
-
     deployer = await blockchain.treasury('deployer');
+
+    tree = blockchain.openContract(AVLTree.createFromConfig({adminAddress: deployer.address}, code));
 
     const deployResult = await tree.sendDeploy(deployer.getSender(), toNano('0.05'));
     expect(deployResult.transactions).toHaveTransaction({
