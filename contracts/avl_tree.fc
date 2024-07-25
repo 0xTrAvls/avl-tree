@@ -1,32 +1,38 @@
 #include "imports/stdlib.fc";
+#include "params.fc";
+#include "op-codes.fc";
+#include "errors.fc";
 
-(cell) load_data() impure {
+(slice, cell) load_data() impure {
     slice ds = get_data().begin_parse();
-    return ds~load_maybe_ref();
+    return (
+        ds~load_msg_addr(), ;; admin_address
+        ds~load_maybe_ref() ;; root
+    );
 }
 
-() save_data(cell root) impure {
-    set_data(begin_cell().store_maybe_ref(root).end_cell());
+() save_data(slice admin_address, cell root) impure {
+    set_data(begin_cell().store_slice(admin_address).store_maybe_ref(root).end_cell());
 }
 
-(cell, cell, int, int, int) unpack_node_data(cell node) impure {
+(cell, cell, int, cell, int) unpack_node_data(cell node) impure {
     slice cs = node.begin_parse();
     return (
         cs~load_maybe_ref(), ;; left child
         cs~load_maybe_ref(), ;; right child
         cs~load_uint(32), ;; key
-        cs~load_uint(64), ;; value
+        cs~load_ref(), ;; value
         cs~load_uint(32) ;; height
     );
 }
 
-(cell) pack_node_data(cell left_child, cell right_child, int key, int value, int height) impure {
+(cell) pack_node_data(cell left_child, cell right_child, int key, cell value, int height) impure {
     return (
         begin_cell()
             .store_maybe_ref(left_child)
             .store_maybe_ref(right_child)
             .store_uint(key, 32)
-            .store_uint(value, 64)
+            .store_ref(value)
             .store_uint(height, 32)
         .end_cell()
     );
@@ -42,8 +48,8 @@ int get_height(cell node) impure {
 }
 
 cell right_rotate(cell node) impure {
-    (cell left_child, cell right_child, int node_key, int node_value, int node_height) = unpack_node_data(node);
-    (cell left_left_child, cell left_right_child, int left_key, int left_value, int left_height) = unpack_node_data(left_child);
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
+    (cell left_left_child, cell left_right_child, int left_key, cell left_value, int left_height) = unpack_node_data(left_child);
     int right_height = get_height(right_child);
     int left_left_height = get_height(left_left_child);
     int left_right_height = get_height(left_right_child);
@@ -57,8 +63,8 @@ cell right_rotate(cell node) impure {
 }
 
 cell left_rotate(cell node) impure {
-    (cell left_child, cell right_child, int node_key, int node_value, int node_height) = unpack_node_data(node);
-    (cell right_left_child, cell right_right_child, int right_key, int right_value, int right_height) = unpack_node_data(right_child);
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
+    (cell right_left_child, cell right_right_child, int right_key, cell right_value, int right_height) = unpack_node_data(right_child);
     int left_height = get_height(left_child);
     int right_left_height = get_height(right_left_child);
     int right_right_height = get_height(right_right_child);
@@ -71,19 +77,19 @@ cell left_rotate(cell node) impure {
     return new_node;
 }
 
-(cell) insert_node(cell node, int key, int value) impure {
+(cell) insert_node(cell node, int key, cell value) impure {
     if (cell_null?(node)) {
         return (pack_node_data(null(), null(), key, value, 1));
     }
 
-    (cell left_child, cell right_child, int node_key, int node_value, int node_height) = unpack_node_data(node);
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
 
     if (key < node_key) {
         (left_child) = insert_node(left_child, key, value);
     } elseif (key > node_key) {
         (right_child) = insert_node(right_child, key, value);
     } else {
-        return (node);
+        throw(NODE_EXISTED);
     }
     
     int left_height = get_height(left_child);
@@ -116,12 +122,12 @@ cell left_rotate(cell node) impure {
     return node;
 }
 
-(cell) update_value(cell node, int key, int value) impure {
+(cell) update_value(cell node, int key, cell value) impure {
     if (cell_null?(node)) {
-        throw(999);
+        throw(NODE_NOT_EXISTED);
     }
 
-    (cell left_child, cell right_child, int node_key, int node_value, int node_height) = unpack_node_data(node);
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
 
     if (key < node_key) {
         left_child = update_value(left_child, key, value);
@@ -136,12 +142,12 @@ cell left_rotate(cell node) impure {
     return node;
 }
 
-(int) get_value(cell node, int key) impure {
+(cell) get_value(cell node, int key) impure {
     if (cell_null?(node)) {
-        return -1;
+        return null();
     }
 
-    (cell left_child, cell right_child, int node_key, int node_value, int node_height) = unpack_node_data(node);
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
 
     if (key < node_key) {
         return get_value(left_child, key);
@@ -157,39 +163,43 @@ cell left_rotate(cell node) impure {
         return();
     }
 
-    cell root = load_data();  
+    (slice admin_address, cell root) = load_data();  
     int op = in_msg_body~load_uint(32);
     int query_id = in_msg_body~load_uint(64);
      
-    if (op == 1) {
+    if (op == create_node) {
         int key = in_msg_body~load_uint(32);
         int value = in_msg_body~load_uint(64);
-        root = insert_node(root, key, value);
-        save_data(root);
+        cell cell_value = begin_cell().store_uint(value, 64).end_cell();
+        root = insert_node(root, key, cell_value);
+        save_data(admin_address, root);
         return ();
     }
  
-    if (op == 2) {
+    if (op == update_node) {
         int key = in_msg_body~load_uint(32);
         int value = in_msg_body~load_uint(64);
-        root = update_value(root, key, value);
-        save_data(root);
+        cell cell_value = begin_cell().store_uint(value, 64).end_cell();
+        root = update_value(root, key, cell_value);
+        save_data(admin_address, root);
         return ();
     }
 
-    if (op == 3) {
+    if (op == reset_gas) {
         slice cs = in_msg_full.begin_parse();
         int flags = cs~load_uint(4);
         slice sender_address = cs~load_msg_addr();
-        int ton_amount = in_msg_body~load_coins();
+        throw_unless(INVALID_CALLER, equal_slices(sender_address, admin_address));
+        throw_unless(INSUFFICIENT_GAS, my_balance > min_ton_for_storage());
 
+        int ton_amount = my_balance - min_ton_for_storage();
         var msg = begin_cell()
             .store_uint(0x10, 6)
             .store_slice(sender_address)
             .store_coins(ton_amount)
             .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
             .end_cell();
-        send_raw_message(msg, 64);
+        send_raw_message(msg, 0);
         return ();
     }
 
@@ -197,15 +207,18 @@ cell left_rotate(cell node) impure {
 }
 
 (int) get_value_by_key(int key) method_id {
-    cell root = load_data();
-    return get_value(root, key);
+    (_, cell root) = load_data();
+    cell cell_value = get_value(root, key);
+    slice slice_value = cell_value.begin_parse();
+    return slice_value~load_uint(64);
 }
 
 (int) get_tree_height() method_id {
-    cell root = load_data();
+    (_, cell root) = load_data();
     return get_height(root);
 }
 
 (cell) get_root() method_id {
-    return load_data();
+    (_, cell root) = load_data();
+    return root;
 }

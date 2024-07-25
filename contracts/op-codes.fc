@@ -1,0 +1,3 @@
+const create_node = "avl_create_node"c;
+const update_node = "avl_update_node"c;
+const reset_gas = "reset_gas"c;
