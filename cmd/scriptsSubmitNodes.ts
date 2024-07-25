@@ -1,26 +1,23 @@
-import { AvlTree } from '../wrappers/AVLTree';
-import { compile, NetworkProvider } from '@ton/blueprint';
 import { Address, toNano, Sender } from '@ton/core';
 import { mnemonicToPrivateKey } from 'ton-crypto';
 import { WalletContractV4, TonClient } from '@ton/ton';
 import fs from 'fs';
 import dotenv from 'dotenv';
+import { Storage } from '../wrappers/Storage';
 dotenv.config();
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 const generateUniqueRandomArray = async (size: number, min: number = 1, max: number = 20000) => {
-  // Create an array with numbers in sequence
   const numbers = Array.from({ length: max - min + 1 }, (_, i) => i + min);
 
-  // Shuffle the array using the Fisher-Yates shuffle algorithm
   for (let i = size - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
   }
 
-  // Return the first 'size' elements (guaranteed unique)
   return numbers.slice(0, size);
 };
 
@@ -33,7 +30,7 @@ export async function execute() {
       }
       try {
         --remainTry;
-        await tree.sendCreateNode(sender, toNano('0.2'), key, value);
+        await storage.sendCreateNode(sender, toNano('0.2'), key, value);
         console.log(`Created node with key ${key}`);
         break;
       } catch (e) {
@@ -75,8 +72,8 @@ export async function execute() {
     senders.push(wallets[i].sender(tonClient.provider(wallets[i].address), keyPairs[i].secretKey));
   }
   console.log(senders);
-  const AVLTreeAddress = Address.parse('EQC57ZB5XLwPQbOqHlrxLv6MI1hXKwfAZ1Iv4W-NQ-3ReObr');
-  const tree = tonClient.open(AvlTree.createFromAddress(AVLTreeAddress));
+  const storageAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const storage = tonClient.open(Storage.createFromAddress(storageAddress));
   const numberOfNodes = 20000;
   const keys = await generateUniqueRandomArray(numberOfNodes, 200000, 300000);
 

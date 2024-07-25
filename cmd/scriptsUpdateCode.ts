@@ -1,28 +1,15 @@
-import { AvlTree } from '../wrappers/AVLTree';
-import { compile, NetworkProvider } from '@ton/blueprint';
 import { Address, Sender, toNano } from '@ton/core';
 import { mnemonicToPrivateKey } from 'ton-crypto';
 import { WalletContractV4, TonClient } from '@ton/ton';
 import fs from 'fs';
 import dotenv from 'dotenv';
+
+import { Storage } from '../wrappers/Storage';
 dotenv.config();
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-
-const generateUniqueRandomArray = async (size: number, min: number = 1, max: number = 20000) => {
-  // Create an array with numbers in sequence
-  const numbers = Array.from({ length: max - min + 1 }, (_, i) => i + min);
-
-  // Shuffle the array using the Fisher-Yates shuffle algorithm
-  for (let i = size - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-  }
-
-  // Return the first 'size' elements (guaranteed unique)
-  return numbers.slice(0, size);
-};
 
 const shuffleArray = (array: any[]) => {
   for (let i = array.length - 1; i > 0; i--) {
@@ -40,7 +27,7 @@ export async function execute() {
       }
       try {
         --remainTry;
-        await tree.sendUpdateNode(sender, toNano('0.2'), key, newValue);
+        await storage.sendUpdateNode(sender, toNano('0.2'), key, newValue);
         console.log(`Update node with key ${key} to value ${newValue}`);
         break;
       } catch (e) {
@@ -60,7 +47,6 @@ export async function execute() {
   for (let i = 0; i < secretKeys.length; i++) {
     keyPairs.push(await mnemonicToPrivateKey(secretKeys[i]));
   }
-  console.log(keyPairs);
 
   const workchain = 0; // Usually you need a workchain 0
   const wallets = [];
@@ -82,11 +68,10 @@ export async function execute() {
   for (let i = 0; i < wallets.length; i++) {
     senders.push(wallets[i].sender(tonClient.provider(wallets[i].address), keyPairs[i].secretKey));
   }
-  console.log(senders);
-  const AVLTreeAddress = Address.parse('EQC57ZB5XLwPQbOqHlrxLv6MI1hXKwfAZ1Iv4W-NQ-3ReObr');
-  const tree = tonClient.open(AvlTree.createFromAddress(AVLTreeAddress));
+  const storageAddress = Address.parse(process.env.AVL_TREE_ADDRESS!);
+  const storage = tonClient.open(Storage.createFromAddress(storageAddress));
 
-  const currentKeys = await tree.getAllLeavesKey();
+  const currentKeys = await storage.getAllLeavesKey();
   shuffleArray(currentKeys);
 
   let promises = [];

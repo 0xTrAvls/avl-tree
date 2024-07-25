@@ -10,28 +10,28 @@ import {
   Slice,
 } from '@ton/core';
 
-export type AvlTreeConfig = {
+export type StorageConfig = {
   adminAddress: Address;
 };
 
-export function avlTreeConfigToCell(config: AvlTreeConfig): Cell {
+export function storageConfigToCell(config: StorageConfig): Cell {
   return beginCell().storeAddress(config.adminAddress).storeMaybeRef(null).endCell();
 }
 
-export class AvlTree implements Contract {
+export class Storage implements Contract {
   constructor(
     readonly address: Address,
     readonly init?: { code: Cell; data: Cell },
   ) {}
 
   static createFromAddress(address: Address) {
-    return new AvlTree(address);
+    return new Storage(address);
   }
 
-  static createFromConfig(config: AvlTreeConfig, code: Cell, workchain = 0) {
-    const data = avlTreeConfigToCell(config);
+  static createFromConfig(config: StorageConfig, code: Cell, workchain = 0) {
+    const data = storageConfigToCell(config);
     const init = { code, data };
-    return new AvlTree(contractAddress(workchain, init), init);
+    return new Storage(contractAddress(workchain, init), init);
   }
 
   async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {

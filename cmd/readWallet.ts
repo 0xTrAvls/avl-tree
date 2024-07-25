@@ -1,7 +1,7 @@
 import { WalletContractV4 } from '@ton/ton';
 import fs from 'fs';
 import path from 'path';
-import { mnemonicNew, mnemonicToPrivateKey } from 'ton-crypto';
+import { mnemonicToPrivateKey } from 'ton-crypto';
 
 // Read mnemonics from a file
 const mnemonics = fs.readFileSync(path.join(__dirname, 'mnemonics.txt'), 'utf-8');
