@@ -1,0 +1,82 @@
+#include "imports/stdlib.fc";
+#include "params.fc";
+#include "op-codes.fc";
+#include "errors.fc";
+#include "avl_tree.fc";
+
+(slice, cell) load_data() impure {
+    slice ds = get_data().begin_parse();
+    return (
+        ds~load_msg_addr(), ;; admin_address
+        ds~load_maybe_ref() ;; root
+    );
+}
+
+() save_data(slice admin_address, cell root) impure {
+    set_data(begin_cell().store_slice(admin_address).store_maybe_ref(root).end_cell());
+}
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    if(slice_empty?(in_msg_body)) {
+        return();
+    }
+
+    (slice admin_address, cell root) = load_data();  
+    int op = in_msg_body~load_uint(32);
+    int query_id = in_msg_body~load_uint(64);
+     
+    if (op == create_node) {
+        int key = in_msg_body~load_uint(32);
+        int value = in_msg_body~load_uint(64);
+        cell cell_value = begin_cell().store_uint(value, 64).end_cell();
+        root = insert_node(root, key, cell_value);
+        save_data(admin_address, root);
+        return ();
+    }
+ 
+    if (op == update_node) {
+        int key = in_msg_body~load_uint(32);
+        int value = in_msg_body~load_uint(64);
+        cell cell_value = begin_cell().store_uint(value, 64).end_cell();
+        root = update_value(root, key, cell_value);
+        save_data(admin_address, root);
+        return ();
+    }
+
+    if (op == reset_gas) {
+        slice cs = in_msg_full.begin_parse();
+        int flags = cs~load_uint(4);
+        slice sender_address = cs~load_msg_addr();
+        throw_unless(INVALID_CALLER, equal_slices(sender_address, admin_address));
+        throw_unless(INSUFFICIENT_GAS, my_balance > min_ton_for_storage());
+
+        int ton_amount = my_balance - min_ton_for_storage();
+        var msg = begin_cell()
+            .store_uint(0x10, 6)
+            .store_slice(sender_address)
+            .store_coins(ton_amount)
+            .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+            .end_cell();
+        send_raw_message(msg, 0);
+        return ();
+    }
+
+    throw(0xffffffff);
+}
+
+(int) get_value_by_key(int key) method_id {
+    (_, cell root) = load_data();
+    cell cell_value = get_value(root, key);
+    slice slice_value = cell_value.begin_parse();
+    return slice_value~load_uint(64);
+}
+
+(int) get_tree_height() method_id {
+    (_, cell root) = load_data();
+    return get_height(root);
+}
+
+(cell) get_root() method_id {
+    (_, cell root) = load_data();
+    return root;
+}

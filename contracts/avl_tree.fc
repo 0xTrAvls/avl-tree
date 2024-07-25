@@ -1,0 +1,142 @@
+(cell, cell, int, cell, int) unpack_node_data(cell node) impure {
+    slice cs = node.begin_parse();
+    return (
+        cs~load_maybe_ref(), ;; left child
+        cs~load_maybe_ref(), ;; right child
+        cs~load_uint(32), ;; key
+        cs~load_ref(), ;; value
+        cs~load_uint(32) ;; height
+    );
+}
+
+(cell) pack_node_data(cell left_child, cell right_child, int key, cell value, int height) impure {
+    return (
+        begin_cell()
+            .store_maybe_ref(left_child)
+            .store_maybe_ref(right_child)
+            .store_uint(key, 32)
+            .store_ref(value)
+            .store_uint(height, 32)
+        .end_cell()
+    );
+}
+
+int get_height(cell node) impure {
+    if (cell_null?(node)) {
+        return 0;
+    }
+
+    (_, _, _, _, int node_height) = unpack_node_data(node);
+    return node_height;
+}
+
+cell right_rotate(cell node) impure {
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
+    (cell left_left_child, cell left_right_child, int left_key, cell left_value, int left_height) = unpack_node_data(left_child);
+    int right_height = get_height(right_child);
+    int left_left_height = get_height(left_left_child);
+    int left_right_height = get_height(left_right_child);
+
+    int new_right_height = max(left_right_height, right_height) + 1;
+    cell new_right_child = pack_node_data(left_right_child, right_child, node_key, node_value, new_right_height);
+    int new_node_height = max(left_left_height, new_right_height) + 1;
+    cell new_node = pack_node_data(left_left_child, new_right_child, left_key, left_value, new_node_height);
+
+    return new_node;
+}
+
+cell left_rotate(cell node) impure {
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
+    (cell right_left_child, cell right_right_child, int right_key, cell right_value, int right_height) = unpack_node_data(right_child);
+    int left_height = get_height(left_child);
+    int right_left_height = get_height(right_left_child);
+    int right_right_height = get_height(right_right_child);
+
+    int new_left_height = max(left_height, right_left_height) + 1;
+    cell new_left_child = pack_node_data(left_child, right_left_child, node_key, node_value, new_left_height);
+    int new_node_height = max(right_right_height, new_left_height) + 1;
+    cell new_node = pack_node_data(new_left_child, right_right_child, right_key, right_value, new_node_height);
+
+    return new_node;
+}
+
+(cell) insert_node(cell node, int key, cell value) impure {
+    if (cell_null?(node)) {
+        return (pack_node_data(null(), null(), key, value, 1));
+    }
+
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
+
+    if (key < node_key) {
+        (left_child) = insert_node(left_child, key, value);
+    } elseif (key > node_key) {
+        (right_child) = insert_node(right_child, key, value);
+    } else {
+        throw(NODE_EXISTED);
+    }
+    
+    int left_height = get_height(left_child);
+    int right_height = get_height(right_child);
+    node_height = max(left_height, right_height) + 1;
+    node = pack_node_data(left_child, right_child, node_key, node_value, node_height);
+
+    int balance_factor = left_height - right_height;
+
+    if(balance_factor > 1) {
+        (_, _, int left_key, _, _) = unpack_node_data(left_child);
+        if(key < left_key) {
+            return right_rotate(node);
+        } else {
+            left_child = left_rotate(left_child);
+            return right_rotate(node);
+        }
+    }
+
+    if(balance_factor < -1) {
+        (_, _, int right_key, _, _) = unpack_node_data(right_child);
+        if(key > right_key) {
+            return left_rotate(node);
+        } else {
+            right_child = right_rotate(right_child);
+            return left_rotate(node);
+        }
+    }
+
+    return node;
+}
+
+(cell) update_value(cell node, int key, cell value) impure {
+    if (cell_null?(node)) {
+        throw(NODE_NOT_EXISTED);
+    }
+
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
+
+    if (key < node_key) {
+        left_child = update_value(left_child, key, value);
+    } elseif (key > node_key) {
+        right_child = update_value(right_child, key, value);
+    } else {
+        node_value = value;
+    }
+
+    node = pack_node_data(left_child, right_child, node_key, node_value, node_height);
+
+    return node;
+}
+
+(cell) get_value(cell node, int key) impure {
+    if (cell_null?(node)) {
+        return null();
+    }
+
+    (cell left_child, cell right_child, int node_key, cell node_value, int node_height) = unpack_node_data(node);
+
+    if (key < node_key) {
+        return get_value(left_child, key);
+    } elseif (key > node_key) {
+        return get_value(right_child, key);
+    }
+
+    return node_value;
+}
